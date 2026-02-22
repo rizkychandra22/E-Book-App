@@ -20,9 +20,10 @@ return new class extends Migration
             $table->integer('year')->nullable();
             $table->string('code_book')->unique();
             $table->text('description')->nullable();
-            $table->string('cover_image')->nullable();  // Lokasi file gambar
+            $table->string('cover_image')->nullable();              // Lokasi file gambar
             $table->string('file_path')->nullable();                // Lokasi file PDF E-Book
             $table->integer('view_count')->default(0);
+            $table->integer('stock')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });
