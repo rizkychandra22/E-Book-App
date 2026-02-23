@@ -12,7 +12,7 @@ const role = computed(() => user.value?.role)
     <div id="app">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm fixed-top">
             <div class="container">
-                <Link class="navbar-brand fw-bold" :href="route('admin.index')">
+                <Link class="navbar-brand fw-bold" :href="route('dashboard')">
                     <i class="bi bi-book-half me-2"></i>E-Book App
                 </Link>
                 
@@ -23,41 +23,10 @@ const role = computed(() => user.value?.role)
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <Link class="nav-link" :href="role === 'admin' ? route('admin.index') : route('member.index')">
+                            <Link class="nav-link" :href="route('dashboard')">
                                 <i class="bi bi-speedometer2 me-1"></i> Dashboard
                             </Link>
                         </li>
-
-                        <template v-if="role === 'admin'">
-                            <li class="nav-item">
-                                <Link class="nav-link" :href="route('admin.index')">
-                                    <i class="bi bi-collection me-1"></i> Tabel Buku
-                                </Link>
-                            </li>
-                            <li class="nav-item">
-                                <Link class="nav-link" :href="route('admin.index')">
-                                    <i class="bi bi-journal-check me-1"></i> Rekap Peminjaman
-                                </Link>
-                            </li>
-                            <li class="nav-item">
-                                <Link class="nav-link" :href="route('admin.index')">
-                                    <i class="bi bi-people me-1"></i> Users
-                                </Link>
-                            </li>
-                        </template>
-
-                        <template v-if="role === 'member'">
-                            <li class="nav-item">
-                                <Link class="nav-link" :href="route('member.index')">
-                                    <i class="bi bi-search me-1"></i> Katalog Buku
-                                </Link>
-                            </li>
-                            <li class="nav-item">
-                                <Link class="nav-link" :href="route('member.index')">
-                                    <i class="bi bi-clock-history me-1"></i> Pinjaman Saya
-                                </Link>
-                            </li>
-                        </template>
                     </ul>
 
                     <div class="d-flex align-items-center">

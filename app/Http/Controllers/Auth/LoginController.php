@@ -15,6 +15,16 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.index');
+            }
+            if ($user->role === 'member') {
+                return redirect()->route('member.index');
+            }
+        }
+
         return Inertia::render('Auth/Login');
     }
 
