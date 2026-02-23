@@ -1,5 +1,5 @@
 <script setup>
-import { Head, usePage, Link } from '@inertiajs/vue3'
+import { Head, usePage, useForm, router } from '@inertiajs/vue3'
 import App from '../Layouts/App.vue'
 import { computed, ref } from 'vue'
 
@@ -7,11 +7,12 @@ defineOptions({ layout: App })
 
 defineProps({
     stats: Object,
-    books: Object,
-    loans: Object,
-    users: Object,
-    myLoans: Object,
-    categories: Object,
+    books: Array,
+    loans: Array,
+    users: Array,
+    myLoans: Array,
+    categories: Array,
+    bookCategories: Array,
 })
 
 const page = usePage()
@@ -20,508 +21,522 @@ const role = computed(() => user.value?.role)
 const activeTab = ref('overview')
 
 const getStatusBadge = (status) => {
-    const badges = {
-        'borrowed': 'warning',
-        'returned': 'success',
-        'late': 'danger'
-    }
+    const badges = { active: 'warning', returned: 'success', overdue: 'danger' }
     return badges[status] || 'secondary'
 }
 
 const getStatusLabel = (status) => {
-    const labels = {
-        'borrowed': '📖 Dipinjam',
-        'returned': '✓ Dikembalikan',
-        'late': '⏰ Terlambat'
-    }
+    const labels = { active: 'Dipinjam', returned: 'Dikembalikan', overdue: 'Terlambat' }
     return labels[status] || status
 }
 
-const getRoleBadge = (role) => {
-    return role === 'admin' ? 'danger' : 'primary'
+const bookForm = useForm({
+    title: '',
+    author: '',
+    publisher: '',
+    year: '',
+    code_book: '',
+    description: '',
+    category_id: '',
+    stock: 0,
+})
+const editingBookId = ref(null)
+const editBook = (book) => {
+    editingBookId.value = book.id
+    bookForm.title = book.title || ''
+    bookForm.author = book.author || ''
+    bookForm.publisher = book.publisher || ''
+    bookForm.year = book.year || ''
+    bookForm.code_book = book.code_book || ''
+    bookForm.description = book.description || ''
+    bookForm.category_id = book.category_id || ''
+    bookForm.stock = book.stock ?? 0
+}
+const resetBookForm = () => {
+    editingBookId.value = null
+    bookForm.reset()
+    bookForm.clearErrors()
+}
+const submitBook = () => {
+    if (editingBookId.value) {
+        bookForm.put(route('admin.books.update', editingBookId.value), { preserveScroll: true, onSuccess: resetBookForm })
+        return
+    }
+    bookForm.post(route('admin.books.store'), { preserveScroll: true, onSuccess: resetBookForm })
+}
+const destroyBook = (bookId) => {
+    if (!confirm('Hapus buku ini?')) return
+    router.delete(route('admin.books.destroy', bookId), { preserveScroll: true })
 }
 
-const getRoleLabel = (role) => {
-    const labels = {
-        'admin': '👑 Administrator',
-        'member': '👤 Member'
+const categoryForm = useForm({ name: '', code_name: '' })
+const editingCategoryId = ref(null)
+const editCategory = (category) => {
+    editingCategoryId.value = category.id
+    categoryForm.name = category.name || ''
+    categoryForm.code_name = category.code_name || ''
+}
+const resetCategoryForm = () => {
+    editingCategoryId.value = null
+    categoryForm.reset()
+    categoryForm.clearErrors()
+}
+const submitCategory = () => {
+    if (editingCategoryId.value) {
+        categoryForm.put(route('admin.categories.update', editingCategoryId.value), { preserveScroll: true, onSuccess: resetCategoryForm })
+        return
     }
-    return labels[role] || role
+    categoryForm.post(route('admin.categories.store'), { preserveScroll: true, onSuccess: resetCategoryForm })
+}
+const destroyCategory = (categoryId) => {
+    if (!confirm('Hapus kategori ini?')) return
+    router.delete(route('admin.categories.destroy', categoryId), { preserveScroll: true })
+}
+
+const userForm = useForm({ name: '', email: '', role: '' })
+const editingUserId = ref(null)
+const editUser = (u) => {
+    editingUserId.value = u.id
+    userForm.name = u.name || ''
+    userForm.email = u.email || ''
+    userForm.role = u.role || ''
+}
+const resetUserForm = () => {
+    editingUserId.value = null
+    userForm.reset()
+    userForm.clearErrors()
+}
+const submitUser = () => {
+    if (!editingUserId.value) return
+    userForm.put(route('admin.users.update', editingUserId.value), { preserveScroll: true, onSuccess: resetUserForm })
+}
+const destroyUser = (userId) => {
+    if (!confirm('Hapus user ini?')) return
+    router.delete(route('admin.users.destroy', userId), { preserveScroll: true })
+}
+
+const loanForm = useForm({ status: '', return_date: '' })
+const editingLoanId = ref(null)
+const editLoan = (loan) => {
+    editingLoanId.value = loan.id
+    loanForm.status = loan.status || 'active'
+    loanForm.return_date = loan.return_date || ''
+}
+const resetLoanForm = () => {
+    editingLoanId.value = null
+    loanForm.reset()
+    loanForm.clearErrors()
+}
+const submitLoan = () => {
+    if (!editingLoanId.value) return
+    loanForm.put(route('admin.loans.update', editingLoanId.value), { preserveScroll: true, onSuccess: resetLoanForm })
 }
 </script>
 
 <template>
-    <Head :title="`Dashboard - E-Book App`" />
-    
-    <!-- Welcome Section -->
-    <div class="mb-4">
-        <h1 class="h3 fw-bold text-dark mb-2">Selamat datang kembali, <span class="text-primary">{{ user.name }}</span>! 👋</h1>
-        <p class="text-muted">{{ role === 'admin' ? 'Panel Administratur E-Book' : 'Dashboard Anggota E-Book' }}</p>
-    </div>
+    <Head title="Dashboard - E-Book App" />
 
-    <!-- Stats Cards Grid -->
-    <div class="row g-4 mb-4">
-        <!-- Admin Stats -->
+    <section class="mb-4">
+        <div class="hero-banner modern-surface p-4 p-lg-5">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center">
+                <div>
+                    <p class="hero-kicker mb-2">Dashboard Terpadu</p>
+                    <h1 class="modern-title h3 mb-2">Halo, {{ user?.name }}.</h1>
+                    <p class="modern-subtitle mb-0">
+                        {{ role === 'admin' ? 'Kelola seluruh data aplikasi dari satu halaman.' : 'Pantau koleksi dan status peminjaman Anda.' }}
+                    </p>
+                </div>
+                <span class="role-pill">{{ role }}</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="row g-3 mb-4">
         <template v-if="role === 'admin'">
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-primary">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Total Buku</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.total_books || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-book fs-4"></i>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stats-card stats-1">
+                    <small>Total Buku</small>
+                    <h3>{{ stats?.total_books || 0 }}</h3>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-success">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Total Users</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.total_users || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-people fs-4"></i>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stats-card stats-2">
+                    <small>Total Kategori</small>
+                    <h3>{{ stats?.total_categories || 0 }}</h3>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-warning">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Kategori</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.total_categories || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-tags fs-4"></i>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stats-card stats-3">
+                    <small>Total User</small>
+                    <h3>{{ stats?.total_users || 0 }}</h3>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-info">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Peminjaman</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.total_loans || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-clock-history fs-4"></i>
-                        </div>
-                    </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stats-card stats-4">
+                    <small>Total Peminjaman</small>
+                    <h3>{{ stats?.total_loans || 0 }}</h3>
                 </div>
             </div>
         </template>
-
-        <!-- Member Stats -->
         <template v-else>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-info">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Buku Dipinjam</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.my_borrowed || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-book fs-4"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-md-4">
+                <div class="stats-card stats-1"><small>Sedang Dipinjam</small><h3>{{ stats?.my_borrowed || 0 }}</h3></div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-secondary">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Wishlist</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.my_wishlist || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-star fs-4"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-md-4">
+                <div class="stats-card stats-3"><small>Terlambat</small><h3>{{ stats?.late_returns || 0 }}</h3></div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 stat-card bg-gradient-danger">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label text-white-50 mb-1">Keterlambatan</p>
-                            <h2 class="stat-value text-white mb-0">{{ stats.late_returns || 0 }}</h2>
-                        </div>
-                        <div class="stat-icon bg-white bg-opacity-25 text-white">
-                            <i class="bi bi-exclamation-triangle fs-4"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-md-4">
+                <div class="stats-card stats-2"><small>Wishlist</small><h3>{{ stats?.my_wishlist || 0 }}</h3></div>
             </div>
         </template>
-    </div>
+    </section>
 
-    <!-- Tabs Navigation -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom-1 p-0">
-            <ul class="nav nav-tabs border-0" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button 
-                        class="nav-link" 
-                        :class="{ active: activeTab === 'overview' }"
-                        @click="activeTab = 'overview'"
-                        type="button"
-                    >
-                        <i class="bi bi-bar-chart me-2"></i> Overview
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button 
-                        class="nav-link"
-                        :class="{ active: activeTab === 'books' }"
-                        @click="activeTab = 'books'"
-                        type="button"
-                    >
-                        <i class="bi bi-book me-2"></i> Buku
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button 
-                        class="nav-link"
-                        :class="{ active: activeTab === 'loans' }"
-                        @click="activeTab = 'loans'"
-                        type="button"
-                    >
-                        <i class="bi bi-clock-history me-2"></i> Peminjaman
-                    </button>
-                </li>
-                <li v-if="role === 'admin'" class="nav-item" role="presentation">
-                    <button 
-                        class="nav-link"
-                        :class="{ active: activeTab === 'users' }"
-                        @click="activeTab = 'users'"
-                        type="button"
-                    >
-                        <i class="bi bi-people me-2"></i> User
-                    </button>
-                </li>
-                <li v-if="role === 'admin'" class="nav-item" role="presentation">
-                    <button 
-                        class="nav-link"
-                        :class="{ active: activeTab === 'categories' }"
-                        @click="activeTab = 'categories'"
-                        type="button"
-                    >
-                        <i class="bi bi-tags me-2"></i> Kategori
-                    </button>
-                </li>
+    <section class="modern-surface dashboard-panel">
+        <div class="panel-head px-3 px-md-4 pt-3 pb-2">
+            <ul class="nav app-tabs flex-wrap gap-2">
+                <li><button class="tab-btn" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button></li>
+                <li><button class="tab-btn" :class="{ active: activeTab === 'books' }" @click="activeTab = 'books'">Buku</button></li>
+                <li><button class="tab-btn" :class="{ active: activeTab === 'loans' }" @click="activeTab = 'loans'">Peminjaman</button></li>
+                <li v-if="role === 'admin'"><button class="tab-btn" :class="{ active: activeTab === 'categories' }" @click="activeTab = 'categories'">Kategori</button></li>
+                <li v-if="role === 'admin'"><button class="tab-btn" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">User</button></li>
             </ul>
         </div>
-        
-        <!-- Tab Content -->
-        <div class="card-body">
-            <!-- Overview Tab -->
-            <div v-if="activeTab === 'overview'" class="tab-pane active">
-                <div class="alert alert-info border-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>Dashboard Overview:</strong> Semua data penting ditampilkan dalam tab-tab di atas untuk navigasi yang lebih mudah.
-                </div>
+
+        <div class="p-3 p-md-4">
+            <div v-if="activeTab === 'overview'" class="overview-box">
+                Semua fitur manajemen sudah dipusatkan dalam dashboard ini.
             </div>
 
-            <!-- Books Tab -->
-            <div v-if="activeTab === 'books'" class="tab-pane active">
-                <h5 class="mb-3"><i class="bi bi-book me-2"></i>Daftar Buku</h5>
-                <div v-if="books && books.length" class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="fw-bold">📖 Judul</th>
-                                <th class="fw-bold">Kategori</th>
-                                <th class="fw-bold">Penulis</th>
-                                <th class="fw-bold text-center">Stok</th>
-                                <th v-if="role === 'admin'" class="fw-bold text-center">Aksi</th>
-                            </tr>
-                        </thead>
+            <div v-if="activeTab === 'books'">
+                <div v-if="role === 'admin'" class="editor-card mb-3">
+                    <h6 class="mb-3 modern-title h6">{{ editingBookId ? 'Edit Buku' : 'Tambah Buku' }}</h6>
+                    <form @submit.prevent="submitBook">
+                        <div class="row g-2">
+                            <div class="col-md-6"><input v-model="bookForm.title" class="form-control form-control-modern" placeholder="Judul"></div>
+                            <div class="col-md-6"><input v-model="bookForm.author" class="form-control form-control-modern" placeholder="Penulis"></div>
+                            <div class="col-md-6"><input v-model="bookForm.publisher" class="form-control form-control-modern" placeholder="Penerbit"></div>
+                            <div class="col-md-3"><input v-model="bookForm.year" type="number" class="form-control form-control-modern" placeholder="Tahun"></div>
+                            <div class="col-md-3"><input v-model="bookForm.stock" type="number" class="form-control form-control-modern" placeholder="Stok"></div>
+                            <div class="col-md-6"><input v-model="bookForm.code_book" class="form-control form-control-modern" placeholder="Kode Buku"></div>
+                            <div class="col-md-6">
+                                <select v-model="bookForm.category_id" class="form-select form-control-modern">
+                                    <option value="">Pilih kategori</option>
+                                    <option v-for="c in bookCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                            </div>
+                            <div class="col-12"><textarea v-model="bookForm.description" class="form-control form-control-modern" rows="2" placeholder="Deskripsi"></textarea></div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-modern-primary" :disabled="bookForm.processing">{{ editingBookId ? 'Update Buku' : 'Tambah Buku' }}</button>
+                            <button v-if="editingBookId" type="button" class="btn btn-modern-soft" @click="resetBookForm">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="table table-modern table-sm mb-0">
+                        <thead><tr><th>Judul</th><th>Kategori</th><th>Penulis</th><th>Stok</th><th v-if="role === 'admin'">Aksi</th></tr></thead>
                         <tbody>
-                            <tr v-for="book in books" :key="book.id" class="align-middle">
-                                <td>
-                                    <div class="fw-semibold">{{ book.title }}</div>
-                                    <small class="text-muted">ID: {{ book.id }}</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ book.category?.name || 'Tanpa Kategori' }}</span>
-                                </td>
+                            <tr v-for="book in books" :key="book.id">
+                                <td>{{ book.title }}</td>
+                                <td>{{ book.category?.name || '-' }}</td>
                                 <td>{{ book.author }}</td>
-                                <td class="text-center">
-                                    <span class="badge" :class="book.stock > 0 ? 'bg-success' : 'bg-danger'">
-                                        {{ book.stock }}
-                                    </span>
-                                </td>
-                                <td v-if="role === 'admin'" class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <Link :href="route('admin.books.edit', book.id)" class="btn btn-outline-primary" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </Link>
-                                        <form :action="route('admin.books.destroy', book.id)" method="post" class="d-inline" @submit.prevent="(e) => confirm('Hapus buku ini?') && e.target.submit()">
-                                            <input type="hidden" name="_method" value="delete" />
-                                            <input type="hidden" name="_token" :value="page.props.csrf_token" />
-                                            <button type="submit" class="btn btn-outline-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
+                                <td>{{ book.stock }}</td>
+                                <td v-if="role === 'admin'" class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-modern-soft" @click="editBook(book)">Edit</button>
+                                    <button class="btn btn-sm btn-modern-danger" @click="destroyBook(book.id)">Hapus</button>
                                 </td>
                             </tr>
+                            <tr v-if="!books?.length"><td colspan="5" class="text-center text-muted py-4">Belum ada buku</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div v-else class="text-center py-4 text-muted">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Belum ada buku
+            </div>
+
+            <div v-if="activeTab === 'categories' && role === 'admin'">
+                <div class="editor-card mb-3">
+                    <h6 class="mb-3 modern-title h6">{{ editingCategoryId ? 'Edit Kategori' : 'Tambah Kategori' }}</h6>
+                    <form @submit.prevent="submitCategory">
+                        <div class="row g-2">
+                            <div class="col-md-6"><input v-model="categoryForm.name" class="form-control form-control-modern" placeholder="Nama kategori"></div>
+                            <div class="col-md-6"><input v-model="categoryForm.code_name" class="form-control form-control-modern" placeholder="Kode kategori"></div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-modern-primary" :disabled="categoryForm.processing">{{ editingCategoryId ? 'Update Kategori' : 'Tambah Kategori' }}</button>
+                            <button v-if="editingCategoryId" type="button" class="btn btn-modern-soft" @click="resetCategoryForm">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <ul class="list-group list-modern">
+                    <li v-for="category in categories" :key="category.id" class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><div class="fw-semibold">{{ category.name }}</div><small class="text-muted">{{ category.code_name }}</small></div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-modern-soft" @click="editCategory(category)">Edit</button>
+                            <button class="btn btn-sm btn-modern-danger" @click="destroyCategory(category.id)">Hapus</button>
+                        </div>
+                    </li>
+                    <li v-if="!categories?.length" class="list-group-item text-center text-muted">Belum ada kategori</li>
+                </ul>
+            </div>
+
+            <div v-if="activeTab === 'users' && role === 'admin'">
+                <div v-if="editingUserId" class="editor-card mb-3">
+                    <h6 class="mb-3 modern-title h6">Edit User</h6>
+                    <form @submit.prevent="submitUser">
+                        <div class="row g-2">
+                            <div class="col-md-4"><input v-model="userForm.name" class="form-control form-control-modern" placeholder="Nama"></div>
+                            <div class="col-md-4"><input v-model="userForm.email" type="email" class="form-control form-control-modern" placeholder="Email"></div>
+                            <div class="col-md-4">
+                                <select v-model="userForm.role" class="form-select form-control-modern">
+                                    <option value="">Pilih role</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="member">Member</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-modern-primary btn-sm" :disabled="userForm.processing">Simpan User</button>
+                            <button type="button" class="btn btn-modern-soft btn-sm" @click="resetUserForm">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="table table-modern table-sm mb-0">
+                        <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Aksi</th></tr></thead>
+                        <tbody>
+                            <tr v-for="u in users" :key="u.id">
+                                <td>{{ u.name }}</td>
+                                <td>{{ u.email }}</td>
+                                <td><span class="role-pill-sm">{{ u.role }}</span></td>
+                                <td class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-modern-soft" @click="editUser(u)">Edit</button>
+                                    <button class="btn btn-sm btn-modern-danger" @click="destroyUser(u.id)">Hapus</button>
+                                </td>
+                            </tr>
+                            <tr v-if="!users?.length"><td colspan="4" class="text-center text-muted py-4">Belum ada user</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Loans Tab -->
-            <div v-if="activeTab === 'loans'" class="tab-pane active">
-                <h5 class="mb-3"><i class="bi bi-clock-history me-2"></i>Rekap Peminjaman</h5>
-                <div v-if="(role === 'admin' ? loans : myLoans) && (role === 'admin' ? loans.length : myLoans.length)" class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+            <div v-if="activeTab === 'loans'">
+                <div v-if="role === 'admin' && editingLoanId" class="editor-card mb-3">
+                    <h6 class="mb-3 modern-title h6">Update Peminjaman</h6>
+                    <form @submit.prevent="submitLoan">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <select v-model="loanForm.status" class="form-select form-control-modern">
+                                    <option value="active">Dipinjam</option>
+                                    <option value="returned">Dikembalikan</option>
+                                    <option value="overdue">Terlambat</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6"><input v-model="loanForm.return_date" type="date" class="form-control form-control-modern"></div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-modern-primary btn-sm" :disabled="loanForm.processing">Simpan Status</button>
+                            <button type="button" class="btn btn-modern-soft btn-sm" @click="resetLoanForm">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="table table-modern table-sm mb-0">
+                        <thead>
                             <tr>
-                                <th class="fw-bold" v-if="role === 'admin'">Member</th>
-                                <th class="fw-bold">📚 Judul Buku</th>
-                                <th class="fw-bold">Tgl Pinjam</th>
-                                <th class="fw-bold">Tgl Kembali</th>
-                                <th class="fw-bold text-center">Status</th>
-                                <th v-if="role === 'admin'" class="fw-bold text-center">Aksi</th>
+                                <th v-if="role === 'admin'">Member</th>
+                                <th>Buku</th>
+                                <th>Pinjam</th>
+                                <th>Kembali</th>
+                                <th>Status</th>
+                                <th v-if="role === 'admin'">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="loan in (role === 'admin' ? loans : myLoans)" :key="loan.id" class="align-middle">
-                                <td v-if="role === 'admin'">
-                                    <div class="fw-semibold">{{ loan.user?.name }}</div>
-                                    <small class="text-muted">{{ loan.user?.email }}</small>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold">{{ loan.book?.title }}</div>
-                                    <small class="text-muted">{{ loan.book?.author }}</small>
-                                </td>
-                                <td>
-                                    <small class="text-muted">{{ new Date(loan.loan_date).toLocaleDateString('id-ID') }}</small>
-                                </td>
-                                <td>
-                                    <small class="text-muted">{{ new Date(loan.due_date).toLocaleDateString('id-ID') }}</small>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge" :class="`bg-${getStatusBadge(loan.status)}`">
-                                        {{ getStatusLabel(loan.status) }}
-                                    </span>
-                                </td>
-                                <td v-if="role === 'admin'" class="text-center">
-                                    <Link :href="route('admin.loans.show', loan.id)" class="btn btn-sm btn-outline-primary rounded-2">
-                                        <i class="bi bi-eye"></i> Lihat
-                                    </Link>
-                                </td>
+                            <tr v-for="loan in (role === 'admin' ? loans : myLoans)" :key="loan.id">
+                                <td v-if="role === 'admin'">{{ loan.user?.name }}</td>
+                                <td>{{ loan.book?.title }}</td>
+                                <td>{{ loan.loan_date }}</td>
+                                <td>{{ loan.due_date }}</td>
+                                <td><span class="badge rounded-pill" :class="`text-bg-${getStatusBadge(loan.status)}`">{{ getStatusLabel(loan.status) }}</span></td>
+                                <td v-if="role === 'admin'"><button class="btn btn-sm btn-modern-soft" @click="editLoan(loan)">Update</button></td>
                             </tr>
+                            <tr v-if="!(role === 'admin' ? loans : myLoans)?.length"><td :colspan="role === 'admin' ? 6 : 5" class="text-center text-muted py-4">Belum ada peminjaman</td></tr>
                         </tbody>
                     </table>
-                </div>
-                <div v-else class="text-center py-4 text-muted">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Belum ada peminjaman
-                </div>
-            </div>
-
-            <!-- Users Tab (Admin Only) -->
-            <div v-if="role === 'admin' && activeTab === 'users'" class="tab-pane active">
-                <h5 class="mb-3"><i class="bi bi-people me-2"></i>Daftar User</h5>
-                <div v-if="users && users.length" class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="fw-bold">Nama</th>
-                                <th class="fw-bold">Email</th>
-                                <th class="fw-bold text-center">Role</th>
-                                <th class="fw-bold text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="u in users" :key="u.id" class="align-middle">
-                                <td>
-                                    <div class="fw-semibold">{{ u.name }}</div>
-                                    <small class="text-muted">ID: {{ u.id }}</small>
-                                </td>
-                                <td>
-                                    <small>{{ u.email }}</small>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge" :class="`bg-${getRoleBadge(u.role)}`">
-                                        {{ getRoleLabel(u.role) }}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <Link :href="route('admin.users.edit', u.id)" class="btn btn-outline-primary" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </Link>
-                                        <form :action="route('admin.users.destroy', u.id)" method="post" class="d-inline" @submit.prevent="(e) => confirm('Hapus user ini?') && e.target.submit()">
-                                            <input type="hidden" name="_method" value="delete" />
-                                            <input type="hidden" name="_token" :value="page.props.csrf_token" />
-                                            <button type="submit" class="btn btn-outline-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div v-else class="text-center py-4 text-muted">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Belum ada user
-                </div>
-            </div>
-
-            <!-- Categories Tab (Admin Only) -->
-            <div v-if="role === 'admin' && activeTab === 'categories'" class="tab-pane active">
-                <h5 class="mb-3"><i class="bi bi-tags me-2"></i>Daftar Kategori</h5>
-                <div v-if="categories && categories.length">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom" v-for="category in categories" :key="category.id">
-                            <div>
-                                <h6 class="mb-1 fw-semibold text-dark">{{ category.name }}</h6>
-                                <small class="text-muted">ID: {{ category.id }}</small>
-                            </div>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <Link :href="route('admin.categories.edit', category.id)" class="btn btn-outline-primary" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </Link>
-                                <form :action="route('admin.categories.destroy', category.id)" method="post" class="d-inline" @submit.prevent="(e) => confirm('Hapus kategori ini?') && e.target.submit()">
-                                    <input type="hidden" name="_method" value="delete" />
-                                    <input type="hidden" name="_token" :value="page.props.csrf_token" />
-                                    <button type="submit" class="btn btn-outline-danger" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-                <div v-else class="text-center py-4 text-muted">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Belum ada kategori
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </template>
 
 <style scoped>
-.stat-card {
-    border-radius: 12px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.hero-banner {
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
 }
 
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+.hero-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(15, 118, 110, 0.08), rgba(249, 115, 22, 0.05));
+    pointer-events: none;
 }
 
-.stat-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-.stat-value {
-    font-size: 2rem;
+.hero-kicker {
+    color: #0f766e;
     font-weight: 700;
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #0d6efd 0%, #0d5be8 100%);
-}
-
-.bg-gradient-success {
-    background: linear-gradient(135deg, #198754 0%, #157347 100%);
-}
-
-.bg-gradient-warning {
-    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
-}
-
-.bg-gradient-info {
-    background: linear-gradient(135deg, #0dcaf0 0%, #0bb5e0 100%);
-}
-
-.bg-gradient-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
-}
-
-.bg-gradient-danger {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-}
-
-.nav-tabs .nav-link {
-    color: #6c757d;
-    border: none;
-    border-bottom: 3px solid transparent;
-    padding: 1rem;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-.nav-tabs .nav-link:hover {
-    color: #0d6efd;
-    border-bottom-color: #0d6efd;
-}
-
-.nav-tabs .nav-link.active {
-    color: #0d6efd;
-    background-color: transparent;
-    border-bottom-color: #0d6efd;
-}
-
-.table-hover tbody tr:hover {
-    background-color: #f8f9fa;
-    transition: background-color 0.2s ease;
-}
-
-.badge {
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-}
-
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     font-size: 0.75rem;
 }
 
-.card {
-    border-radius: 12px;
+.role-pill {
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: #0f172a;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.72rem;
 }
 
-.tab-pane {
-    animation: fadeIn 0.3s ease;
+.stats-card {
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    color: #fff;
+    min-height: 104px;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.stats-card small {
+    display: block;
+    opacity: 0.86;
+}
+
+.stats-card h3 {
+    font-weight: 800;
+    margin: 0.2rem 0 0;
+}
+
+.stats-1 {
+    background: linear-gradient(135deg, #0f766e, #0b5b55);
+}
+
+.stats-2 {
+    background: linear-gradient(135deg, #334155, #1e293b);
+}
+
+.stats-3 {
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+}
+
+.stats-4 {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.dashboard-panel {
+    border-radius: 20px;
+}
+
+.app-tabs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tab-btn {
+    border: 1px solid #d7e2ea;
+    background: #f8fafc;
+    color: #334155;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.tab-btn.active {
+    background: #0f766e;
+    border-color: #0f766e;
+    color: #fff;
+}
+
+.overview-box {
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    color: #475569;
+    background: #f8fafc;
+}
+
+.editor-card {
+    border: 1px solid #dde7ef;
+    border-radius: 14px;
+    padding: 1rem;
+    background: #fbfdff;
+}
+
+.form-control-modern {
+    border-radius: 10px;
+    border-color: #dbe4ed;
+    min-height: 42px;
+}
+
+.table-wrap {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.table-modern thead th {
+    background: #f8fafc;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
+}
+
+.table-modern td,
+.table-modern th {
+    padding: 0.78rem 0.72rem;
+    vertical-align: middle;
+}
+
+.list-modern .list-group-item {
+    border-color: #e2e8f0;
+}
+
+.btn-modern-primary {
+    background: #0f766e;
+    color: #fff;
+    border: 1px solid #0f766e;
+}
+
+.btn-modern-primary:hover {
+    background: #0b5b55;
+    border-color: #0b5b55;
+    color: #fff;
+}
+
+.btn-modern-soft {
+    background: #f8fafc;
+    border: 1px solid #d1dbe5;
+    color: #334155;
+}
+
+.btn-modern-danger {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #c2410c;
+}
+
+.role-pill-sm {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    padding: 0.16rem 0.52rem;
+    border-radius: 999px;
+    font-weight: 700;
 }
 </style>

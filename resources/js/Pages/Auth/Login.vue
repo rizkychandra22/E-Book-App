@@ -5,149 +5,194 @@ import { ref, watch } from 'vue'
 const showPassword = ref(false)
 
 const form = useForm({
-    login: '',    
+    login: '',
     password: '',
     remember: false,
-});
+})
 
 const submit = () => {
-    form.clearErrors();
+    form.clearErrors()
 
-    // 1. Validasi Manual Client-side untuk Login & Password
     if (!form.login) {
-        form.setError('login', 'Username atau Email wajib diisi!');
+        form.setError('login', 'Username atau Email wajib diisi.')
     }
     if (!form.password) {
-        form.setError('password', 'Password wajib diisi!');
+        form.setError('password', 'Password wajib diisi.')
     }
-    
-    // 2. Kirim jika semua input terisi
+
     if (form.login && form.password) {
         form.post('/login', {
             onFinish: () => form.reset('password'),
-        });
+        })
     }
-};
+}
 
 watch(() => form.login, () => {
-    if (form.errors.loginError) form.clearErrors('loginError');
-    if (form.errors.loginAkses) form.clearErrors('loginAkses');
-});
+    if (form.errors.loginError) form.clearErrors('loginError')
+    if (form.errors.loginAkses) form.clearErrors('loginAkses')
+})
 </script>
 
 <template>
     <Head title="Login - E-Book App" />
-    
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
 
-                <!-- Card Login -->
-                <div class="card shadow border-0">
-                    <div class="card-body p-4">
-                        <div class="text-center mb-3">
-                            <i class="bi bi-book display-3 text-primary"></i>
-                            <h3 class="fw-bold">E-Book App</h3>
-                            <p class="text-muted small">Login to your account</p>
+    <section class="login-wrap py-5">
+        <div class="container">
+            <div class="row justify-content-center align-items-center g-4">
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="login-promo modern-surface p-4 p-xl-5">
+                        <div class="badge text-bg-light fw-semibold mb-3">Library Management</div>
+                        <h1 class="modern-title h2 mb-3">Kelola koleksi buku lebih cepat dan rapi.</h1>
+                        <p class="modern-subtitle mb-4">
+                            Dashboard terpusat untuk buku, kategori, user, dan peminjaman dalam satu alur kerja.
+                        </p>
+                        <div class="promo-points">
+                            <div><i class="bi bi-check-circle-fill"></i> CRUD terintegrasi di dashboard</div>
+                            <div><i class="bi bi-check-circle-fill"></i> Peminjaman real-time</div>
+                            <div><i class="bi bi-check-circle-fill"></i> Tampilan responsif modern</div>
                         </div>
-
-                        <!-- Alert Error Login Middleware -->
-                        <div v-if="$page.props.errors.loginAkses" class="alert alert-danger alert-dismissible fade show shadow-sm py-2 px-3 mb-3" role="alert" style="font-size: 0.8rem;">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-shield-lock-fill me-2"></i>
-                                <span>{{ $page.props.errors.loginAkses }}</span>
-                            </div>
-                            <button type="button" class="btn-close btn-close-sm p-1" @click="$page.props.errors.loginAkses = null" style="top: 0.4rem; right: 0.5rem;"></button>
-                        </div>
-
-                        <!-- Alert Error Login Form -->
-                        <div v-if="form.errors.loginError" class="alert alert-danger alert-dismissible fade show shadow-sm py-2 px-3 mb-3" role="alert" style="font-size: 0.8rem;">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-exclamation-circle-fill me-2"></i>
-                                <span>{{ form.errors.loginError }}</span>
-                            </div>
-                            <button type="button" class="btn-close btn-close-sm p-1" @click="form.clearErrors('loginError')" style="top: 0.4rem; right: 0.5rem;"></button>
-                        </div>
-
-                        <!-- From Login -->
-                        <form @submit.prevent="submit">
-
-                            <!-- Input Username or Email -->
-                            <div class="mb-3">
-                                <label for="login" class="form-label small fw-bold text-secondary">Username or Email</label>
-                                <div class="input-group input-group-sm has-validation">
-                                    <span class="input-group-text bg-light border-end-0" :class="{ 'border-danger': form.errors.login }">
-                                        <i class="bi bi-person text-secondary"></i>
-                                    </span>
-                                    <input 
-                                        type="text" 
-                                        v-model="form.login" 
-                                        class="form-control border-start-0 ps-0" 
-                                        :class="{ 'is-invalid': form.errors.login }"
-                                        id="login" 
-                                        placeholder="Username or email"
-                                    >
-                                    <div class="invalid-feedback small">{{ form.errors.login }}</div>
-                                </div>
-                            </div>
-
-                            <!-- Input Password -->
-                            <div class="mb-3">
-                                <label for="password" class="form-label small fw-bold text-secondary">Password</label>
-                                <div class="input-group input-group-sm has-validation">
-                                    <span class="input-group-text bg-light border-end-0" :class="{ 'border-danger': form.errors.password }">
-                                        <i class="bi bi-lock text-secondary"></i>
-                                    </span>
-                                    <input 
-                                        :type="showPassword ? 'text' : 'password'" 
-                                        v-model="form.password" 
-                                        class="form-control border-start-0 ps-0" 
-                                        :class="{ 'is-invalid': form.errors.password }" 
-                                        id="password" 
-                                        placeholder="Your password"
-                                    >
-                                    <button type="button" class="btn btn-outline-secondary border-start-0" :class="{ 'border-danger': form.errors.password }" @click="showPassword = !showPassword">
-                                        <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-                                    </button>
-                                    <div v-if="form.errors.password" class="invalid-feedback small">{{ form.errors.password }}</div>
-                                </div>
-                            </div>
-
-                            <!-- Check Box Remember Me -->
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" v-model="form.remember" class="form-check-input" id="remember">
-                                <label class="form-check-label small text-secondary" for="remember">Remember Me</label>
-                            </div>
-
-                            <!-- Button Login -->
-                            <div class="d-grid mt-2">
-                                <button 
-                                    type="submit" 
-                                    class="btn btn-primary btn-sm fw-bold shadow-sm" 
-                                    :disabled="form.processing"
-                                >
-                                    <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
-                                    LOGIN
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
-                
-                <p class="text-center mt-4 text-muted small" style="opacity: 0.7;">
-                    &copy; {{ new Date().getFullYear() }} E-Book Library System
-                </p>
+
+                <div class="col-12 col-md-8 col-lg-5">
+                    <div class="modern-surface login-card p-4 p-md-5">
+                        <div class="text-center mb-4">
+                            <div class="logo-badge mx-auto mb-3">
+                                <i class="bi bi-book-half"></i>
+                            </div>
+                            <h2 class="modern-title h4 mb-1">Welcome back</h2>
+                            <p class="modern-subtitle mb-0">Masuk ke akun E-Book App</p>
+                        </div>
+
+                        <div v-if="$page.props.errors.loginAkses" class="alert alert-danger py-2 px-3 small mb-3">
+                            {{ $page.props.errors.loginAkses }}
+                        </div>
+                        <div v-if="form.errors.loginError" class="alert alert-danger py-2 px-3 small mb-3">
+                            {{ form.errors.loginError }}
+                        </div>
+
+                        <form @submit.prevent="submit">
+                            <div class="mb-3">
+                                <label for="login" class="form-label fw-semibold">Username / Email</label>
+                                <input
+                                    id="login"
+                                    v-model="form.login"
+                                    type="text"
+                                    class="form-control modern-input"
+                                    :class="{ 'is-invalid': form.errors.login }"
+                                    placeholder="contoh: admin@example.com"
+                                >
+                                <div class="invalid-feedback">{{ form.errors.login }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-semibold">Password</label>
+                                <div class="input-group">
+                                    <input
+                                        id="password"
+                                        v-model="form.password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        class="form-control modern-input"
+                                        :class="{ 'is-invalid': form.errors.password }"
+                                        placeholder="Masukkan password"
+                                    >
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary password-toggle"
+                                        @click="showPassword = !showPassword"
+                                    >
+                                        <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback d-block">{{ form.errors.password }}</div>
+                            </div>
+
+                            <div class="mb-4 form-check">
+                                <input id="remember" v-model="form.remember" type="checkbox" class="form-check-input">
+                                <label class="form-check-label" for="remember">Ingat saya</label>
+                            </div>
+
+                            <button type="submit" class="btn login-btn w-100" :disabled="form.processing">
+                                <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
+                                Masuk
+                            </button>
+                        </form>
+                    </div>
+
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        &copy; {{ new Date().getFullYear() }} E-Book Library System
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 </template>
 
 <style scoped>
-.card { border-radius: 12px; }
-.btn-primary { border-radius: 8px; letter-spacing: 0.5px; }
-.input-group-text { border-radius: 8px 0 0 8px; }
-.form-control { border-radius: 0 8px 8px 0; }
-.input-group .btn { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
-.form-control:focus, .btn:focus { box-shadow: none !important; border-color: #dee2e6 !important; }
-.form-control.is-invalid:focus { border-color: #dc3545 !important; }
+.login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.login-card {
+    border-radius: 24px;
+}
+
+.logo-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.4rem;
+    background: linear-gradient(135deg, #0f766e, #0b5b55);
+}
+
+.modern-input {
+    min-height: 46px;
+    border-radius: 12px;
+    border: 1px solid #d9e2ec;
+}
+
+.modern-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.15);
+    border-color: #0f766e;
+}
+
+.password-toggle {
+    border-radius: 0 12px 12px 0;
+}
+
+.login-btn {
+    min-height: 46px;
+    border: 0;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0f766e, #0b5b55);
+}
+
+.login-btn:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #0f766e, #0a4f4a);
+}
+
+.login-promo {
+    border-radius: 24px;
+}
+
+.promo-points {
+    display: grid;
+    gap: 0.85rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+.promo-points i {
+    color: #0f766e;
+    margin-right: 0.55rem;
+}
 </style>

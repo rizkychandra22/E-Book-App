@@ -1,22 +1,39 @@
 <script setup>
-import { Head, usePage } from '@inertiajs/vue3'
+import { Head, useForm } from '@inertiajs/vue3'
 const props = defineProps({ category: Object })
-const page = usePage()
+
+const form = useForm({
+    name: props.category.name,
+})
+
+const submit = () => {
+    form.put(route('admin.categories.update', props.category.id), {
+        onSuccess: () => form.reset(),
+    })
+}
 </script>
 
 <template>
   <Head :title="`Edit Kategori - ${category.name}`" />
-  <div class="card">
-    <div class="card-header"><h5 class="mb-0">Edit Kategori</h5></div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+      <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Kategori</h5>
+    </div>
     <div class="card-body">
-      <form :action="route('admin.categories.update', category.id)" method="post">
-        <input type="hidden" name="_method" value="put" />
-        <input type="hidden" name="_token" :value="page.props.csrf_token" />
+      <form @submit.prevent="submit">
         <div class="mb-3">
-          <label class="form-label">Nama</label>
-          <input name="name" class="form-control" :value="category.name" />
+          <label class="form-label">Nama Kategori<span class="text-danger">*</span></label>
+          <input v-model="form.name" class="form-control" :class="{ 'is-invalid': form.errors.name }" placeholder="Masukkan nama kategori" />
+          <div class="invalid-feedback d-block" v-if="form.errors.name">{{ form.errors.name }}</div>
         </div>
-        <button class="btn btn-primary">Perbarui</button>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" :disabled="form.processing">
+            <i class="bi bi-check-circle me-1" v-if="!form.processing"></i>
+            <span v-if="form.processing" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            {{ form.processing ? 'Menyimpan...' : 'Perbarui' }}
+          </button>
+          <a href="/dashboard" class="btn btn-secondary">Batal</a>
+        </div>
       </form>
     </div>
   </div>

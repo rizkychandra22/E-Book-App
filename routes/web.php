@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -32,11 +31,22 @@ Route::middleware(['role:admin'])->prefix('admin')->group(function () {
     Route::get('/index', function () {
         return redirect()->route('dashboard');
     })->name('admin.index');
-    // Admin resource routes
-    Route::resource('books', \App\Http\Controllers\Admin\BookController::class)->names('admin.books');
-    Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('admin.categories');
-    Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('admin.users');
-    Route::resource('loans', \App\Http\Controllers\Admin\LoanController::class)->names('admin.loans');
+
+    Route::resource('books', \App\Http\Controllers\Admin\BookController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->names('admin.books');
+
+    Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->names('admin.categories');
+
+    Route::resource('users', \App\Http\Controllers\Admin\UserController::class)
+        ->only(['update', 'destroy'])
+        ->names('admin.users');
+
+    Route::resource('loans', \App\Http\Controllers\Admin\LoanController::class)
+        ->only(['update'])
+        ->names('admin.loans');
 });
 
 // Route Dashboard Khusus MEMBER

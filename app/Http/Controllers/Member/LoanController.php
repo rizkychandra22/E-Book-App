@@ -18,10 +18,10 @@ class LoanController extends Controller
         ]);
 
         $data['user_id'] = Auth::id();
-        $data['status'] = 'borrowed';
+        $data['status'] = 'active';
 
         Loan::create($data);
 
-        return redirect()->route('member.index');
+        return redirect()->route('dashboard')->with('message', 'Peminjaman berhasil dibuat.');
     }
 }

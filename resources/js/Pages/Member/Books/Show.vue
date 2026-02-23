@@ -1,7 +1,17 @@
 <script setup>
-import { Head, usePage } from '@inertiajs/vue3'
+import { Head, useForm } from '@inertiajs/vue3'
+
 const props = defineProps({ book: Object })
-const page = usePage()
+
+const form = useForm({
+  book_id: props.book.id,
+  loan_date: '',
+  due_date: '',
+})
+
+const submit = () => {
+  form.post(route('member.loans.store'))
+}
 </script>
 
 <template>
@@ -11,18 +21,18 @@ const page = usePage()
       <h5>{{ book.title }}</h5>
       <p class="small text-muted">{{ book.author }} — {{ book.category?.name }}</p>
       <p>{{ book.description }}</p>
-      <form :action="route('member.loans.store')" method="post" class="mt-3">
-        <input type="hidden" name="_token" :value="page.props.csrf_token" />
-        <input type="hidden" name="book_id" :value="book.id" />
+      <form class="mt-3" @submit.prevent="submit">
         <div class="mb-3">
           <label class="form-label">Tanggal Pinjam</label>
-          <input type="date" name="loan_date" class="form-control" />
+          <input v-model="form.loan_date" type="date" class="form-control" :class="{ 'is-invalid': form.errors.loan_date }" />
+          <div v-if="form.errors.loan_date" class="invalid-feedback d-block">{{ form.errors.loan_date }}</div>
         </div>
         <div class="mb-3">
           <label class="form-label">Tanggal Kembali</label>
-          <input type="date" name="due_date" class="form-control" />
+          <input v-model="form.due_date" type="date" class="form-control" :class="{ 'is-invalid': form.errors.due_date }" />
+          <div v-if="form.errors.due_date" class="invalid-feedback d-block">{{ form.errors.due_date }}</div>
         </div>
-        <button class="btn btn-primary">Pinjam</button>
+        <button class="btn btn-primary" :disabled="form.processing">Pinjam</button>
       </form>
     </div>
   </div>

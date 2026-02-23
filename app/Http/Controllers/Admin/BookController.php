@@ -4,62 +4,66 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Book;
-use App\Models\Category;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class BookController extends Controller
 {
     public function index()
     {
-        $books = Book::with('category')->paginate(12);
-        $categories = Category::all();
-        return Inertia::render('Admin/Books/Index', compact('books', 'categories'));
+        return redirect()->route('dashboard');
     }
 
     public function create()
     {
-        $categories = Category::all();
-        return Inertia::render('Admin/Books/Create', compact('categories'));
+        return redirect()->route('dashboard');
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
+            'author' => 'required|string|max:255',
+            'publisher' => 'required|string|max:255',
+            'year' => 'nullable|integer|min:0|max:' . date('Y'),
+            'code_book' => 'required|string|max:255|unique:books,code_book',
+            'description' => 'nullable|string',
             'category_id' => 'required|exists:categories,id',
-            'stock' => 'nullable|integer|min:0',
+            'stock' => 'required|integer|min:0',
         ]);
 
         Book::create($data);
 
-        return redirect()->route('admin.books.index');
+        return redirect()->route('dashboard')->with('message', 'Buku berhasil ditambahkan.');
     }
 
     public function edit(Book $book)
     {
-        $categories = Category::all();
-        return Inertia::render('Admin/Books/Edit', compact('book', 'categories'));
+        return redirect()->route('dashboard');
     }
 
     public function update(Request $request, Book $book)
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
+            'author' => 'required|string|max:255',
+            'publisher' => 'required|string|max:255',
+            'year' => 'nullable|integer|min:0|max:' . date('Y'),
+            'code_book' => ['required', 'string', 'max:255', Rule::unique('books', 'code_book')->ignore($book->id)],
+            'description' => 'nullable|string',
             'category_id' => 'required|exists:categories,id',
-            'stock' => 'nullable|integer|min:0',
+            'stock' => 'required|integer|min:0',
         ]);
 
         $book->update($data);
 
-        return redirect()->route('admin.books.index');
+        return redirect()->route('dashboard')->with('message', 'Buku berhasil diperbarui.');
     }
 
     public function destroy(Book $book)
     {
         $book->delete();
-        return redirect()->route('admin.books.index');
+
+        return redirect()->route('dashboard')->with('message', 'Buku berhasil dihapus.');
     }
 }

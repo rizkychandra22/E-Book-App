@@ -5,19 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::paginate(20);
-        return Inertia::render('Admin/Users/Index', compact('users'));
+        return redirect()->route('dashboard');
     }
 
     public function edit(User $user)
     {
-        return Inertia::render('Admin/Users/Edit', compact('user'));
+        return redirect()->route('dashboard');
     }
 
     public function update(Request $request, User $user)
@@ -30,12 +28,13 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('dashboard')->with('message', 'User berhasil diperbarui.');
     }
 
     public function destroy(User $user)
     {
         $user->delete();
-        return redirect()->route('admin.users.index');
+
+        return redirect()->route('dashboard')->with('message', 'User berhasil dihapus.');
     }
 }

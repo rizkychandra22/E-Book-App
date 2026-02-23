@@ -17,32 +17,37 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         if ($user->role === 'admin') {
-            // Get all data for admin dashboard
-            $books = Book::with('category')->limit(10)->get();
-            $loans = Loan::with('user', 'book')->limit(10)->get();
-            $users = User::limit(10)->get();
-            $categories = Category::all();
+            $books = Book::with('category')->latest()->get();
+            $loans = Loan::with('user', 'book')->latest()->get();
+            $users = User::latest()->get();
+            $categories = Category::latest()->get();
 
-            // Calculate stats
             $stats = [
                 'total_books' => Book::count(),
                 'total_users' => User::count(),
                 'total_categories' => Category::count(),
                 'total_loans' => Loan::count(),
-                'borrowed_count' => Loan::where('status', 'borrowed')->count(),
+                'borrowed_count' => Loan::where('status', 'active')->count(),
                 'returned_count' => Loan::where('status', 'returned')->count(),
+                'overdue_count' => Loan::where('status', 'overdue')->count(),
             ];
 
-            return Inertia::render('Dashboard', compact('stats', 'books', 'loans', 'users', 'categories'));
+            return Inertia::render('Dashboard', [
+                'stats' => $stats,
+                'books' => $books,
+                'loans' => $loans,
+                'users' => $users,
+                'categories' => $categories,
+                'bookCategories' => $categories,
+            ]);
         } else {
-            // Member dashboard
             $myLoans = Loan::where('user_id', $user->id)->with('book')->limit(10)->get();
             $books = Book::with('category')->limit(10)->get();
 
             $stats = [
-                'my_borrowed' => Loan::where('user_id', $user->id)->where('status', 'borrowed')->count(),
+                'my_borrowed' => Loan::where('user_id', $user->id)->where('status', 'active')->count(),
                 'my_wishlist' => 0, // Can be implemented later
-                'late_returns' => Loan::where('user_id', $user->id)->where('status', 'late')->count(),
+                'late_returns' => Loan::where('user_id', $user->id)->where('status', 'overdue')->count(),
             ];
 
             return Inertia::render('Dashboard', compact('stats', 'books', 'myLoans'));
