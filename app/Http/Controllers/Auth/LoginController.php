@@ -15,6 +15,10 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
         return Inertia::render('Auth/Login');
     }
 
@@ -40,22 +44,11 @@ class LoginController extends Controller
 
         // Login (menggunakan username & password)
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            
             // Regenerasi session untuk keamanan
             $request->session()->regenerate();
-            $user = Auth::user();
 
-            // Redirect Berdasarkan Role
-            if ($user->role === 'admin') {
-                return redirect()->intended(route('admin.index'));
-            }
-
-            if ($user->role === 'member') {
-                return redirect()->intended(route('member.index'));
-            }
-
-            // Jika tidak ada Role yang sesuai
-            return redirect('/');
+            // Redirect ke dashboard untuk semua user
+            return redirect()->intended(route('dashboard'));
         }
 
         // Jika Gagal, kembali ke Vue
