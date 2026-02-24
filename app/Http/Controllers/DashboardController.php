@@ -19,7 +19,7 @@ class DashboardController extends Controller
         if ($user->role === 'admin') {
             $books = Book::with('category')->latest()->get();
             $loans = Loan::with('user', 'book')->latest()->get();
-            $users = User::latest()->get();
+            $users = User::where('role', 'member')->latest()->get();
             $categories = Category::latest()->get();
 
             $stats = [
@@ -43,6 +43,7 @@ class DashboardController extends Controller
         } else {
             $myLoans = Loan::where('user_id', $user->id)->with('book')->limit(10)->get();
             $books = Book::with('category')->limit(10)->get();
+            $categories = Category::latest()->get();
 
             $stats = [
                 'my_borrowed' => Loan::where('user_id', $user->id)->where('status', 'active')->count(),
@@ -50,7 +51,12 @@ class DashboardController extends Controller
                 'late_returns' => Loan::where('user_id', $user->id)->where('status', 'overdue')->count(),
             ];
 
-            return Inertia::render('Dashboard', compact('stats', 'books', 'myLoans'));
+           return Inertia::render('Dashboard', [
+                'stats' => $stats,
+                'books' => $books,
+                'myLoans' => $myLoans,
+                'bookCategories' => $categories, 
+            ]);
         }
     }
 }

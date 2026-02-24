@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 defineOptions({ layout: App })
 
-defineProps({
+const props = defineProps({
     stats: Object,
     books: Array,
     loans: Array,
@@ -19,6 +19,41 @@ const page = usePage()
 const user = computed(() => page.props.auth.user)
 const role = computed(() => user.value?.role)
 const activeTab = ref('overview')
+
+const searchQuery = ref('')
+const selectedCategory = ref('')
+
+const filteredBooks = computed(() => {
+  const allBooks = Array.isArray(props.books) ? props.books : []
+
+  if (!searchQuery.value && !selectedCategory.value) {
+    return allBooks
+  }
+
+  const query = searchQuery.value.toLowerCase()
+
+  const matched = allBooks.filter(book => {
+    const matchesSearch =
+      !searchQuery.value ||
+      book.title?.toLowerCase().includes(query) ||
+      book.author?.toLowerCase().includes(query) ||
+      book.publisher?.toLowerCase().includes(query) ||
+      book.description?.toLowerCase().includes(query) ||
+      book.year?.toString().includes(query) ||
+      book.category?.name?.toLowerCase().includes(query)
+
+    const matchesCategory =
+      !selectedCategory.value ||
+      book.category?.name === selectedCategory.value
+
+    return matchesSearch && matchesCategory
+  })
+
+  const notMatched = allBooks.filter(book => !matched.includes(book))
+
+  // Menampilkan data search dan filter paling atas dari list card book
+  return [...matched, ...notMatched]
+})
 
 const getStatusBadge = (status) => {
     const badges = { active: 'warning', returned: 'success', overdue: 'danger' }
@@ -195,16 +230,87 @@ const submitLoan = () => {
         <div class="panel-head px-3 px-md-4 pt-3 pb-2">
             <ul class="nav app-tabs flex-wrap gap-2">
                 <li><button class="tab-btn" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button></li>
-                <li><button class="tab-btn" :class="{ active: activeTab === 'books' }" @click="activeTab = 'books'">Buku</button></li>
+                <li><button class="tab-btn" :class="{ active: activeTab === 'books' }" @click="activeTab = 'books'" v-if="role === 'admin'">Buku</button></li>
                 <li><button class="tab-btn" :class="{ active: activeTab === 'loans' }" @click="activeTab = 'loans'">Peminjaman</button></li>
-                <li v-if="role === 'admin'"><button class="tab-btn" :class="{ active: activeTab === 'categories' }" @click="activeTab = 'categories'">Kategori</button></li>
-                <li v-if="role === 'admin'"><button class="tab-btn" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">User</button></li>
+                <li v-if="role === 'admin'">
+                    <button class="tab-btn" :class="{ active: activeTab === 'categories' }" @click="activeTab = 'categories'">Kategori</button>
+                </li>
+                <li v-if="role === 'admin'">
+                    <button class="tab-btn" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">User</button>
+                </li>
             </ul>
         </div>
 
         <div class="p-3 p-md-4">
-            <div v-if="activeTab === 'overview'" class="overview-box">
-                Semua fitur manajemen sudah dipusatkan dalam dashboard ini.
+            <div v-if="activeTab === 'overview'">
+                <div v-if="role === 'admin'" class="overview-box">
+                    Semua fitur manajemen sudah dipusatkan dalam dashboard ini.
+                </div>
+                <div v-else class="row g-3">
+                    <!-- SEARCH & FILTER -->
+                    <div class="row mb-4 g-2 align-items-end">
+                        <!-- Search -->
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">
+                                Cari Buku
+                            </label>
+                            <input 
+                                v-model="searchQuery"
+                                type="text"
+                                class="form-control form-control-modern"
+                                placeholder="Cari buku berdasarkan judul, penulis, penerbit, deskripsi, tahun..."
+                            >
+                        </div>
+
+                        <!-- Filter Category -->
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted">
+                                Filter Kategori
+                            </label>
+                            <select 
+                                v-model="selectedCategory"
+                                class="form-select form-control-modern"
+                            >
+                                <option value="">Semua Kategori</option>
+                                <option 
+                                    v-for="category in bookCategories"
+                                    :key="category.id"
+                                    :value="category.name"
+                                >
+                                    {{ category.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Reset -->
+                        <div class="col-md-2">
+                            <button 
+                                class="btn btn-modern-soft w-100"
+                                @click="() => { searchQuery = ''; selectedCategory = '' }"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div v-for="book in filteredBooks" :key="book.id" class="col-md-3">
+                        <div class="card book-card h-100">
+                            <div v-if="book.cover_image" class="card-img-placeholder position-relative" style="height: 200px; border-radius: 12px 12px 0 0; overflow: hidden;">
+                                <img :src="book.cover_image" :alt="book.title" class="w-100 h-100 object-fit-cover">
+                            </div>
+                            <div v-else class="card-img-placeholder bg-light d-flex align-items-center justify-content-center position-relative" style="height: 200px; border-radius: 12px 12px 0 0; overflow: hidden;">
+                                <div class="text-center w-100">
+                                    <i class="bi bi-book fs-1 text-primary opacity-25 d-block mb-2"></i>
+                                    <small class="text-muted">Sampul Buku</small>
+                                </div>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title">{{ book.title }}</h6>
+                                <p class="card-text text-muted">{{ book.category?.name || 'Tanpa Kategori' }}</p>
+                                <a :href="route('member.books.show', book.id)" class="btn btn-modern-primary mt-auto">Lihat Detail</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div v-if="activeTab === 'books'">
@@ -290,7 +396,6 @@ const submitLoan = () => {
                             <div class="col-md-4">
                                 <select v-model="userForm.role" class="form-select form-control-modern">
                                     <option value="">Pilih role</option>
-                                    <option value="admin">Admin</option>
                                     <option value="member">Member</option>
                                 </select>
                             </div>
