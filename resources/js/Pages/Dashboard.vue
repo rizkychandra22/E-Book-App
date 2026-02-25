@@ -339,7 +339,7 @@ const submitLoan = () => {
                     </form>
                 </div>
 
-                <div class="table-wrap">
+                <div class="table-wrap table-responsive">
                     <table class="table table-modern table-sm mb-0">
                         <thead><tr><th>Judul</th><th>Kategori</th><th>Penulis</th><th>Stok</th><th v-if="role === 'admin'">Aksi</th></tr></thead>
                         <tbody>
@@ -407,7 +407,7 @@ const submitLoan = () => {
                     </form>
                 </div>
 
-                <div class="table-wrap">
+                <div class="table-wrap table-responsive">
                     <table class="table table-modern table-sm mb-0">
                         <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Aksi</th></tr></thead>
                         <tbody>
@@ -447,7 +447,7 @@ const submitLoan = () => {
                     </form>
                 </div>
 
-                <div class="table-wrap">
+                <div class="table-wrap table-responsive">
                     <table class="table table-modern table-sm mb-0">
                         <thead>
                             <tr>
@@ -593,6 +593,7 @@ const submitLoan = () => {
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     overflow: hidden;
+    overflow-x: auto;
 }
 
 .table-modern thead th {
