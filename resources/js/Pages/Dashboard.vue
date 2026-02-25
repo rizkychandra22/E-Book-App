@@ -1,5 +1,5 @@
 <script setup>
-import { Head, usePage, useForm, router } from '@inertiajs/vue3'
+import { Head, Link, usePage, useForm, router } from '@inertiajs/vue3'
 import App from '../Layouts/App.vue'
 import { computed, ref } from 'vue'
 
@@ -166,6 +166,15 @@ const submitLoan = () => {
     if (!editingLoanId.value) return
     loanForm.put(route('admin.loans.update', editingLoanId.value), { preserveScroll: true, onSuccess: resetLoanForm })
 }
+
+const toggleWishlist = (book) => {
+    if (book.is_wishlisted) {
+        router.delete(route('member.wishlists.destroy', book.id), { preserveScroll: true })
+        return
+    }
+
+    router.post(route('member.wishlists.store', book.id), {}, { preserveScroll: true })
+}
 </script>
 
 <template>
@@ -294,6 +303,9 @@ const submitLoan = () => {
                     </div>
                     <div v-for="book in filteredBooks" :key="book.id" class="col-md-3">
                         <div class="card book-card h-100">
+                            <span v-if="book.is_wishlisted" class="wishlist-badge" title="Di wishlist">
+                                <i class="bi bi-star-fill"></i>
+                            </span>
                             <div v-if="book.cover_image" class="card-img-placeholder position-relative" style="height: 200px; border-radius: 12px 12px 0 0; overflow: hidden;">
                                 <img :src="book.cover_image" :alt="book.title" class="w-100 h-100 object-fit-cover">
                             </div>
@@ -306,7 +318,20 @@ const submitLoan = () => {
                             <div class="card-body d-flex flex-column">
                                 <h6 class="card-title">{{ book.title }}</h6>
                                 <p class="card-text text-muted">{{ book.category?.name || 'Tanpa Kategori' }}</p>
-                                <a :href="route('member.books.show', book.id)" class="btn btn-modern-primary mt-auto">Lihat Detail</a>
+                                <div class="mt-auto d-flex gap-2 card-actions">
+                                    <Link :href="route('member.books.show', book.id)" class="btn btn-modern-primary btn-sm action-detail">
+                                        Lihat Detail
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm action-wishlist"
+                                        :class="book.is_wishlisted ? 'wishlisted' : ''"
+                                        @click="toggleWishlist(book)"
+                                        :title="book.is_wishlisted ? 'Hapus dari wishlist' : 'Tambah ke wishlist'"
+                                    >
+                                        <i :class="book.is_wishlisted ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -547,6 +572,25 @@ const submitLoan = () => {
     border-radius: 20px;
 }
 
+.book-card {
+    position: relative;
+}
+
+.wishlist-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.75);
+    color: #facc15;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .app-tabs {
     list-style: none;
     margin: 0;
@@ -623,6 +667,27 @@ const submitLoan = () => {
     background: #0b5b55;
     border-color: #0b5b55;
     color: #fff;
+}
+
+.card-actions {
+    align-items: stretch;
+}
+
+.action-detail {
+    flex: 1 1 auto;
+}
+
+.action-wishlist {
+    width: 42px;
+    border: 1px solid #d1dbe5;
+    background: #f8fafc;
+    color: #334155;
+}
+
+.action-wishlist.wishlisted {
+    border-color: #facc15;
+    background: #fef9c3;
+    color: #a16207;
 }
 
 .btn-modern-soft {

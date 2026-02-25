@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Book extends Model
 {
@@ -39,5 +40,13 @@ class Book extends Model
     public function loans(): HasMany
     {
         return $this->hasMany(Loan::class);
+    }
+
+    /**
+     * Users who have this book in their wishlist.
+     */
+    public function wishlistedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'wishlists')->withTimestamps();
     }
 }

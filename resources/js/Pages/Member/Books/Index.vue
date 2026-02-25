@@ -1,6 +1,15 @@
 <script setup>
-import { Link, Head } from '@inertiajs/vue3'
+import { Link, Head, router } from '@inertiajs/vue3'
 const props = defineProps({ books: Object })
+
+const toggleWishlist = (book) => {
+  if (book.is_wishlisted) {
+    router.delete(route('member.wishlists.destroy', book.id), { preserveScroll: true })
+    return
+  }
+
+  router.post(route('member.wishlists.store', book.id), {}, { preserveScroll: true })
+}
 </script>
 
 <template>
@@ -14,6 +23,9 @@ const props = defineProps({ books: Object })
   <div v-if="books && books.data && books.data.length" class="row g-4">
     <div class="col-md-6 col-lg-4 col-xxl-3" v-for="book in books.data" :key="book.id">
       <div class="card border-0 shadow-sm h-100 book-card">
+        <span v-if="book.is_wishlisted" class="wishlist-badge" title="Di wishlist">
+          <i class="bi bi-star-fill"></i>
+        </span>
         <div class="card-img-placeholder bg-light d-flex align-items-center justify-content-center position-relative" style="height: 220px; border-radius: 12px 12px 0 0; overflow: hidden;">
           <div class="text-center w-100">
             <i class="bi bi-book fs-1 text-primary opacity-25 d-block mb-2"></i>
@@ -35,9 +47,20 @@ const props = defineProps({ books: Object })
                 {{ book.stock > 0 ? 'Tersedia' : 'Habis' }}
               </span>
             </div>
-            <Link :href="route('member.books.show', book.id)" class="btn btn-primary btn-sm w-100 rounded-2">
-              <i class="bi bi-eye me-1"></i> Lihat Detail
-            </Link>
+            <div class="d-flex gap-2">
+              <Link :href="route('member.books.show', book.id)" class="btn btn-primary btn-sm rounded-2 flex-fill">
+                <i class="bi bi-eye me-1"></i> Lihat Detail
+              </Link>
+              <button
+                type="button"
+                class="btn btn-sm wishlist-action"
+                :class="book.is_wishlisted ? 'wishlisted' : ''"
+                @click="toggleWishlist(book)"
+                :title="book.is_wishlisted ? 'Hapus dari wishlist' : 'Tambah ke wishlist'"
+              >
+                <i :class="book.is_wishlisted ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -54,6 +77,7 @@ const props = defineProps({ books: Object })
 .book-card {
   border-radius: 12px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
 }
 
 .book-card:hover {
@@ -81,5 +105,33 @@ const props = defineProps({ books: Object })
 .btn-sm {
   padding: 0.5rem 1rem;
   font-weight: 500;
+}
+
+.wishlist-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  color: #facc15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wishlist-action {
+  width: 42px;
+  border: 1px solid #d1dbe5;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.wishlist-action.wishlisted {
+  border-color: #facc15;
+  background: #fef9c3;
+  color: #a16207;
 }
 </style>

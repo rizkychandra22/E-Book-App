@@ -51,4 +51,6 @@ Route::middleware(['role:member'])->prefix('member')->group(function () {
     Route::get('books', [\App\Http\Controllers\Member\BookController::class, 'index'])->name('member.books.index');
     Route::get('books/{book}', [\App\Http\Controllers\Member\BookController::class, 'show'])->name('member.books.show');
     Route::post('loans', [\App\Http\Controllers\Member\LoanController::class, 'store'])->name('member.loans.store');
+    Route::post('wishlists/{book}', [\App\Http\Controllers\Member\WishlistController::class, 'store'])->name('member.wishlists.store');
+    Route::delete('wishlists/{book}', [\App\Http\Controllers\Member\WishlistController::class, 'destroy'])->name('member.wishlists.destroy');
 });
