@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ref, watch } from 'vue'
 
 const showPassword = ref(false)
@@ -67,6 +67,9 @@ watch(() => form.login, () => {
                         <div v-if="$page.props.errors.loginAkses" class="alert alert-danger py-2 px-3 small mb-3">
                             {{ $page.props.errors.loginAkses }}
                         </div>
+                        <div v-if="$page.props.flash?.message" class="alert alert-success py-2 px-3 small mb-3">
+                            {{ $page.props.flash.message }}
+                        </div>
                         <div v-if="form.errors.loginError" class="alert alert-danger py-2 px-3 small mb-3">
                             {{ form.errors.loginError }}
                         </div>
@@ -116,6 +119,11 @@ watch(() => form.login, () => {
                                 <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
                                 Masuk
                             </button>
+
+                            <p class="text-center small text-muted mt-3 mb-0">
+                                Belum punya akun?
+                                <Link :href="route('register')" class="fw-semibold text-decoration-none">Daftar sekarang</Link>
+                            </p>
                         </form>
                     </div>
 

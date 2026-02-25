@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,18 @@ class LoginController extends Controller
         }
 
         return Inertia::render('Auth/Login');
+    }
+
+    /**
+     * Tampilkan halaman register.
+     */
+    public function showRegisterForm()
+    {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Auth/Register');
     }
 
     /**
@@ -55,6 +68,29 @@ class LoginController extends Controller
         throw ValidationException::withMessages([
             'loginError' => 'Credentials login tidak sesuai.',
         ]);
+    }
+
+    /**
+     * Proses registrasi user baru (member).
+     */
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        User::create([
+            'name' => $data['name'],
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'role' => 'member',
+        ]);
+        
+        return redirect()->route('login')->with('message', 'Registrasi berhasil. Silakan login.');
     }
 
     /**
