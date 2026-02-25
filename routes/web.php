@@ -28,10 +28,6 @@ Route::middleware('auth')->group(function () {
 
 // Route Dashboard Khusus ADMIN
 Route::middleware(['role:admin'])->prefix('admin')->group(function () {
-    Route::get('/index', function () {
-        return redirect()->route('dashboard');
-    })->name('admin.index');
-
     Route::resource('books', \App\Http\Controllers\Admin\BookController::class)
         ->only(['store', 'update', 'destroy'])
         ->names('admin.books');
@@ -51,9 +47,6 @@ Route::middleware(['role:admin'])->prefix('admin')->group(function () {
 
 // Route Dashboard Khusus MEMBER
 Route::middleware(['role:member'])->prefix('member')->group(function () {
-    Route::get('/index', function () {
-        return redirect()->route('dashboard');
-    })->name('member.index');
     // Member routes: browse books and create loans
     Route::get('books', [\App\Http\Controllers\Member\BookController::class, 'index'])->name('member.books.index');
     Route::get('books/{book}', [\App\Http\Controllers\Member\BookController::class, 'show'])->name('member.books.show');
