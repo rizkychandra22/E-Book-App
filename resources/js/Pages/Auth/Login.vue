@@ -156,7 +156,7 @@ watch(() => form.login, () => {
     justify-content: center;
     color: #fff;
     font-size: 1.4rem;
-    background: linear-gradient(135deg, #0f766e, #0b5b55);
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
 }
 
 .modern-input {
@@ -166,8 +166,8 @@ watch(() => form.login, () => {
 }
 
 .modern-input:focus {
-    box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.15);
-    border-color: #0f766e;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15);
+    border-color: #1e3a8a;
 }
 
 .password-toggle {
@@ -180,12 +180,12 @@ watch(() => form.login, () => {
     border-radius: 12px;
     color: #fff;
     font-weight: 700;
-    background: linear-gradient(135deg, #0f766e, #0b5b55);
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
 }
 
 .login-btn:hover {
     color: #fff;
-    background: linear-gradient(135deg, #0f766e, #0a4f4a);
+    background: linear-gradient(135deg, #2e54be, #144be3);
 }
 
 .login-promo {
@@ -200,7 +200,7 @@ watch(() => form.login, () => {
 }
 
 .promo-points i {
-    color: #0f766e;
+    color: #1e3a8a;
     margin-right: 0.55rem;
 }
 </style>

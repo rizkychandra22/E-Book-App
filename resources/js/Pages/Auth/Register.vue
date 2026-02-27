@@ -194,7 +194,7 @@ const submit = () => {
 
 .login-btn:hover {
   color: #fff;
-  background: linear-gradient(135deg, #0f766e, #0a4f4a);
+  background: linear-gradient(135deg, #219188, #0f988f);
 }
 
 .login-promo {
