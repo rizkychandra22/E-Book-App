@@ -22,10 +22,20 @@ class RoleMiddleware
             ]);
         }
 
-        $user = Auth::user();   
-        if ($user->role === $role) {
+        $user = Auth::user();
+        
+        // Hanya izinkan 1 pengecekan role login 
+        // if ($user->role === $role) {
+        //     return $next($request);
+        // }
+
+        // Izinkan pengecekan role login lebih dari 1
+        $allRole = explode('|', $role);
+        if(in_array($user->role, $allRole))
+        {
             return $next($request);
         }
+        
         Auth::logout();
         return redirect()
             ->route('login')->withErrors([

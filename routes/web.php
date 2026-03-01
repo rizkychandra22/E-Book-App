@@ -23,8 +23,8 @@ Route::middleware('guest')->group(function () {
 // Route Logout (Hanya bisa diakses jika SUDAH login)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Route Dashboard Unified (All-in-One) - untuk semua user yang sudah login
-Route::middleware('role:admin', 'role:member')->group(function () {
+// Route dashboard untuk semua role setelah berhasil login
+Route::middleware(['role:admin|member'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
